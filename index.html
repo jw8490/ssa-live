@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSA • Smart Basket • Live Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --yellow: #facc15;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .ssa-yellow {
+            color: #facc15;
+        }
+
+        .premium-dark {
+            background: #0a0a0a;
+        }
+
+        .basket-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .metric-value {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .step-dot {
+            transition: all 0.2s ease;
+        }
+
+        .step-dot.active {
+            background-color: #facc15;
+            box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.2);
+        }
+
+        .platform-row {
+            transition: background-color 0.2s ease;
+        }
+
+        .platform-row:hover {
+            background-color: #18181b;
+        }
+
+        .amount-chip {
+            transition: all 0.2s ease;
+        }
+
+        .amount-chip.active {
+            background-color: #facc15;
+            color: #0a0a0a;
+            font-weight: 700;
+            transform: translateY(-1px);
+        }
+
+        .live-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: confetti-fall 1.2s ease-out forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(120px) rotate(720deg); opacity: 0; }
+        }
+
+        .premium-shadow {
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+        }
+
+        .allocation-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #facc15, #eab308);
+            border-radius: 9999px;
+            transition: width 0.4s ease;
+        }
+
+        .mini-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            border-radius: 9999px;
+        }
+
+        .modal {
+            animation: modal-pop 0.2s ease forwards;
+        }
+
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            backdrop-filter: blur(18px);
+        }
+        .signin-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 120;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: radial-gradient(circle at top, rgba(250,204,21,0.08), transparent 30%), rgba(0,0,0,0.72);
+            backdrop-filter: blur(14px);
+        }
+        .signin-card {
+            width: min(100%, 480px);
+            border-radius: 1.5rem;
+        }
+        .hidden-access {
+            display: none !important;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(250,204,21,0.08);
+            border: 1px solid rgba(250,204,21,0.18);
+        }
+        .market-stat {
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(39,39,42,0.72);
+            border-radius: 1rem;
+        }
+        .input-shell {
+            background: #09090b;
+            border: 1px solid #3f3f46;
+            border-radius: 1rem;
+        }
+        .input-shell:focus-within {
+            border-color: #facc15;
+            box-shadow: 0 0 0 4px rgba(250,204,21,0.12);
+        }
+
+    
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 5px rgba(74, 222, 128, 0); }
+        }
+        .live-dot { animation: livePulse 2s ease-in-out infinite; }
+        #marketplace-status { transition: color 0.4s ease; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 premium-dark">
+
+    <div id="signin-overlay" class="signin-overlay">
+        <div class="signin-card glass-panel p-6 md:p-8 text-zinc-100">
+            <div class="flex items-center justify-between gap-4 mb-6">
+                <div>
+                    <div class="status-pill text-xs font-semibold uppercase tracking-[0.22em] text-yellow-300 mb-3">
+                        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                        SSA Access Layer
+                    </div>
+                    <h2 class="font-display text-3xl md:text-4xl tracking-tight">Sign in to unlock live SSA wallet</h2>
+                    <p class="text-sm text-zinc-400 mt-2">Your wallet stays encrypted on this device after refresh, and live marketplace metrics now attempt structured live sync first, then fall back to marketplace parsing.</p>
+                </div>
+                <div class="hidden md:flex w-14 h-14 rounded-3xl bg-yellow-400 items-center justify-center text-zinc-950 text-3xl font-black">S</div>
+            </div>
+            <form id="signin-form" class="space-y-4">
+                <div>
+                    <label for="signin-email" class="block text-sm font-medium text-zinc-300 mb-2">Email</label>
+                    <div class="input-shell px-4 py-3">
+                        <input id="signin-email" type="email" required placeholder="founder@shopshareanywhere.com" class="w-full bg-transparent outline-none text-sm" />
+                    </div>
+                </div>
+                <div>
+                    <label for="signin-passcode" class="block text-sm font-medium text-zinc-300 mb-2">Wallet passcode</label>
+                    <div class="input-shell px-4 py-3">
+                        <input id="signin-passcode" type="password" required minlength="6" placeholder="Minimum 6 characters" class="w-full bg-transparent outline-none text-sm" />
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 text-xs text-zinc-400 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-4">
+                    <i class="fa-solid fa-shield-halved text-yellow-400 mt-0.5"></i>
+                    <span>Wallet data is encrypted with your passcode before being stored locally, so a page refresh does not expose balances or holdings in plain text.</span>
+                </div>
+                <div id="signin-message" class="hidden text-sm rounded-2xl px-4 py-3"></div>
+                <button type="submit" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 transition-all text-zinc-950 font-semibold rounded-3xl flex items-center justify-center gap-x-2 text-base">
+                    <i class="fa-solid fa-fingerprint"></i>
+                    <span>Enter SSA ecosystem</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <nav class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg sticky top-0 z-50">
+        <div class="max-w-screen-xl mx-auto px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="flex items-center gap-x-2">
+                    <div class="w-9 h-9 bg-yellow-400 flex items-center justify-center rounded-2xl shadow-inner">
+                        <span class="text-zinc-950 font-black text-3xl tracking-tighter">S</span>
+                    </div>
+                    <div>
+                        <span class="font-display text-3xl font-semibold tracking-tighter">SSA</span>
+                    </div>
+                </div>
+                <div class="px-3 py-1.5 rounded-3xl bg-zinc-900 text-xs font-medium flex items-center gap-x-1.5 border border-zinc-800">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full live-dot"></div>
+                    <span class="text-emerald-400 text-xs font-semibold">LIVE</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-x-2">
+                <div onclick="showPortfolio()" 
+                     class="px-4 py-2 text-sm font-medium hover:bg-zinc-900 rounded-3xl cursor-pointer flex items-center gap-x-2 transition-colors">
+                    <i class="fa-solid fa-wallet text-lg"></i>
+                    <span>Portfolio</span>
+                </div>
+                
+                <div class="w-px h-6 bg-zinc-800 mx-1"></div>
+                
+                <div class="flex items-center gap-x-3 pl-2">
+                    <div class="text-right">
+                        <div class="text-sm font-semibold">Jacob Wieck</div>
+                        <div class="text-[10px] text-emerald-400 -mt-0.5">Premium • Vista, CA</div>
+                    </div>
+                    <div class="w-9 h-9 bg-zinc-800 rounded-2xl overflow-hidden border border-zinc-700">
+                        <img src="https://i.pravatar.cc/36?img=12" alt="Jacob" class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-xl mx-auto px-8 pt-8 pb-16">
+        
+        <div class="flex items-end justify-between mb-8">
+            <div>
+                <div class="flex items-center gap-x-3">
+                    <h1 class="font-display text-5xl font-semibold tracking-tighter">SSA Smart Basket</h1>
+                    <div class="px-4 py-1 rounded-3xl bg-yellow-400 text-zinc-950 text-xs font-black tracking-[1px]">LIVE</div>
+                </div>
+                <p class="text-xl text-zinc-400 mt-1">One-click exposure to the top consumer economy platforms</p>
+            </div>
+            
+            <div class="text-right">
+                <div class="text-xs text-zinc-500">ECOSYSTEM CAP</div>
+                <div id="ecosystem-cap" class="font-display text-4xl font-semibold tabular-nums">$608,334,580,840</div>
+                <div class="flex items-center justify-end gap-x-1 text-emerald-400 text-sm">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    <span id="momentum">+0.03%</span>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="grid md:grid-cols-4 gap-4 mb-8">
+            <a href="https://www.shopshareanywhere.com/ssa-marketplace" target="_blank" rel="noopener noreferrer" class="market-stat p-4 md:col-span-2 hover:border-yellow-400/30 transition-colors">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                        <div class="text-[11px] uppercase tracking-[0.22em] text-zinc-500">SSA Marketplace</div>
+                        <div class="text-lg font-semibold">Live ecosystem market cap</div>
+                    </div>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-zinc-500"></i>
+                </div>
+                <div id="marketplace-cap" class="font-display text-3xl font-semibold metric-value">Loading…</div>
+                <div class="flex items-center gap-2 mt-2 text-sm text-emerald-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 live-dot"></span>
+                    <span id="marketplace-change">Syncing live stats</span>
+                </div>
+            </a>
+            <div class="market-stat p-4">
+                <div class="text-[11px] uppercase tracking-[0.22em] text-zinc-500 mb-2">Tracked platforms</div>
+                <div id="tracked-platforms" class="font-display text-3xl font-semibold metric-value">35</div>
+                <div class="text-sm text-zinc-400 mt-2">Expanded SSA ecosystem list from your selected companies and platforms. Auto-refreshes when live data is available.</div>
+            </div>
+            <div class="market-stat p-4">
+                <div class="text-[11px] uppercase tracking-[0.22em] text-zinc-500 mb-2">Wallet security</div>
+                <div id="wallet-security-status" class="font-display text-2xl font-semibold text-yellow-300">Locked</div>
+                <div id="wallet-security-detail" class="text-sm text-zinc-400 mt-2">Sign in to decrypt holdings on this device.</div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-center gap-x-2 mb-8" id="progress-bar"></div>
+
+        <div id="flow-container" class="max-w-[820px] mx-auto"></div>
+
+    </div>
+
+    <!-- PayPal Modal -->
+    <div id="paypal-modal" onclick="if (event.target.id === 'paypal-modal') closePayPalModal()" 
+         class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-md mx-4 premium-shadow overflow-hidden">
+            
+            <div class="px-6 pt-6 pb-4 flex items-center justify-between border-b border-zinc-800">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-10 h-10 bg-[#003087] rounded-2xl flex items-center justify-center">
+                        <span class="text-white font-black text-2xl">P</span>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-lg">PayPal</div>
+                        <div class="text-xs text-emerald-400 -mt-0.5">Secure Checkout</div>
+                    </div>
+                </div>
+                <button onclick="closePayPalModal()" class="text-zinc-400 hover:text-white text-xl">×</button>
+            </div>
+            
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <div class="text-4xl font-semibold tabular-nums" id="modal-amount">$500.00</div>
+                    <div class="text-xs text-zinc-500 mt-1">USD • One-time purchase</div>
+                </div>
+                
+                <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 mb-5">
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-x-2">
+                            <i class="fa-brands fa-paypal text-[#003087]"></i>
+                            <span class="font-medium">Pay with PayPal</span>
+                        </div>
+                        <div class="text-emerald-400 text-xs font-medium">INSTANT</div>
+                    </div>
+                </div>
+                
+                <div id="paypal-content">
+                    <button onclick="processPayPalPayment()" 
+                            class="w-full py-4 bg-[#003087] hover:bg-[#002b6b] active:bg-[#001f4d] transition-all text-white font-semibold rounded-3xl flex items-center justify-center gap-x-2 text-lg shadow-inner">
+                        <i class="fa-brands fa-paypal"></i>
+                        <span>Pay with PayPal</span>
+                    </button>
+                    
+                    <div class="text-center mt-4">
+                        <div class="text-[10px] text-zinc-500">You will be redirected to PayPal to complete payment</div>
+                    </div>
+                </div>
+                
+                <div id="paypal-processing" class="hidden text-center py-8">
+                    <div class="w-10 h-10 border-4 border-yellow-400 border-t-transparent animate-spin rounded-full mx-auto mb-4"></div>
+                    <div class="font-semibold">Opening PayPal...</div>
+                    <div class="text-xs text-zinc-500 mt-1">Complete payment in the new tab</div>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-zinc-950 text-xs text-center text-zinc-500 border-t border-zinc-800">
+                Powered by PayPal • SSL Secured • 256-bit encryption
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function initTailwind() {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            'display': ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif']
+                        }
+                    }
+                }
+            };
+        }
+
+        let currentStep = 1;
+        let currentAmount = 500;
+        let portfolio = { cash: 10000, holdings: [] };
+        let basketCurrentValue = 500;
+        let liveInterval = null;
+
+        const basketData = [
+            { id: 1, platform: "Amazon", weight: 5, demand: 84, social: 68, color: "#f97316" },
+            { id: 2, platform: "Apple Store", weight: 5, demand: 86, social: 76, color: "#3b82f6" },
+            { id: 3, platform: "Best Buy", weight: 3, demand: 62, social: 39, color: "#2563eb" },
+            { id: 4, platform: "ChatGPT", weight: 4, demand: 91, social: 94, color: "#10b981" },
+            { id: 5, platform: "Coinbase", weight: 3, demand: 71, social: 51, color: "#60a5fa" },
+            { id: 6, platform: "Costco", weight: 3, demand: 69, social: 37, color: "#ef4444" },
+            { id: 7, platform: "eBay", weight: 2, demand: 58, social: 42, color: "#facc15" },
+            { id: 8, platform: "Epic Games", weight: 3, demand: 74, social: 66, color: "#a3a3a3" },
+            { id: 9, platform: "Etsy", weight: 2, demand: 55, social: 44, color: "#fb923c" },
+            { id: 10, platform: "Facebook", weight: 4, demand: 73, social: 83, color: "#2563eb" },
+            { id: 11, platform: "GameStop", weight: 2, demand: 59, social: 57, color: "#dc2626" },
+            { id: 12, platform: "Google", weight: 4, demand: 78, social: 86, color: "#22c55e" },
+            { id: 13, platform: "Grok", weight: 2, demand: 76, social: 88, color: "#e5e7eb" },
+            { id: 14, platform: "Grokipedia", weight: 1, demand: 48, social: 41, color: "#94a3b8" },
+            { id: 15, platform: "Instagram", weight: 4, demand: 65, social: 90, color: "#a855f7" },
+            { id: 16, platform: "Kalshi", weight: 2, demand: 63, social: 46, color: "#0ea5e9" },
+            { id: 17, platform: "Kraken", weight: 2, demand: 61, social: 43, color: "#7c3aed" },
+            { id: 18, platform: "Kohl's", weight: 2, demand: 49, social: 31, color: "#6366f1" },
+            { id: 19, platform: "Perplexity", weight: 3, demand: 79, social: 74, color: "#14b8a6" },
+            { id: 20, platform: "Pinterest", weight: 2, demand: 53, social: 61, color: "#ef4444" },
+            { id: 21, platform: "Polymarket", weight: 2, demand: 68, social: 64, color: "#8b5cf6" },
+            { id: 22, platform: "Robinhood", weight: 3, demand: 72, social: 58, color: "#22c55e" },
+            { id: 23, platform: "Smart & Final", weight: 2, demand: 52, social: 27, color: "#eab308" },
+            { id: 24, platform: "Starbucks", weight: 2, demand: 57, social: 54, color: "#16a34a" },
+            { id: 25, platform: "Starlink", weight: 3, demand: 75, social: 69, color: "#f8fafc" },
+            { id: 26, platform: "StockX", weight: 2, demand: 56, social: 49, color: "#84cc16" },
+            { id: 27, platform: "Target", weight: 3, demand: 67, social: 45, color: "#ef4444" },
+            { id: 28, platform: "Twitch", weight: 2, demand: 62, social: 78, color: "#8b5cf6" },
+            { id: 29, platform: "Tesla", weight: 4, demand: 88, social: 81, color: "#dc2626" },
+            { id: 30, platform: "Uber", weight: 3, demand: 66, social: 52, color: "#e5e7eb" },
+            { id: 31, platform: "Walmart", weight: 4, demand: 79, social: 48, color: "#2563eb" },
+            { id: 32, platform: "Wayfair", weight: 2, demand: 51, social: 34, color: "#7c3aed" },
+            { id: 33, platform: "Weather", weight: 1, demand: 47, social: 22, color: "#38bdf8" },
+            { id: 34, platform: "X", weight: 3, demand: 70, social: 92, color: "#f5f5f5" },
+            { id: 35, platform: "YouTube", weight: 4, demand: 80, social: 95, color: "#ef4444" }
+        ];
+
+        const UNIT_PRICE = 40.13;
+        const liveStats = {
+            ecosystemCapRaw: '$608,334,580,840',
+            ecosystemCapCompact: '$608.3B',
+            momentum: '+0.03%',
+            momentumLabel: 'Strong consumer signals',
+            activeUsers: '18.6m',
+            activeUsersDelta: 'Expanded ecosystem engagement',
+            dailyChange: '+$184M today',
+            trackedPlatforms: 35,
+            sourceStatus: 'Waiting for live sync',
+            lastUpdated: null,
+            liveMode: 'auto'
+        };
+        const SSA_MARKETPLACE_URL = 'https://www.shopshareanywhere.com/ssa-marketplace';
+        // Tickers mapped to SSA ecosystem platforms (publicly traded companies)
+        // marketdata.app — no API key, full CORS support
+        const SSA_TICKERS = {
+            'AMZN':  { platform: 'Amazon',       weight: 5 },
+            'AAPL':  { platform: 'Apple Store',   weight: 5 },
+            'BBY':   { platform: 'Best Buy',      weight: 3 },
+            'MSFT':  { platform: 'ChatGPT',       weight: 4 },
+            'COIN':  { platform: 'Coinbase',      weight: 3 },
+            'COST':  { platform: 'Costco',        weight: 3 },
+            'EBAY':  { platform: 'eBay',          weight: 2 },
+            'ETSY':  { platform: 'Etsy',          weight: 2 },
+            'META':  { platform: 'Facebook',      weight: 4 },
+            'GOOG':  { platform: 'Google',        weight: 4 },
+            'PINS':  { platform: 'Pinterest',     weight: 2 },
+            'HOOD':  { platform: 'Robinhood',     weight: 3 },
+            'SBUX':  { platform: 'Starbucks',     weight: 2 },
+            'TGT':   { platform: 'Target',        weight: 3 },
+            'TSLA':  { platform: 'Tesla',         weight: 4 },
+            'UBER':  { platform: 'Uber',          weight: 3 },
+            'WMT':   { platform: 'Walmart',       weight: 4 },
+            'W':     { platform: 'Wayfair',       weight: 2 },
+            'NFLX':  { platform: 'Netflix',       weight: 4 },
+            'SPOT':  { platform: 'Spotify',       weight: 3 },
+        };
+        const SSA_TICKER_LIST = Object.keys(SSA_TICKERS).join(',');
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency', currency: 'USD', minimumFractionDigits: 2
+            }).format(amount);
+        }
+
+
+
+        function formatCompactCurrency(rawValue) {
+            const numeric = Number(String(rawValue).replace(/[^\d.-]/g, ''));
+            if (!Number.isFinite(numeric) || numeric <= 0) return '$608.3B';
+            const abs = Math.abs(numeric);
+            if (abs >= 1e12) return `$${(numeric / 1e12).toFixed(1)}T`;
+            if (abs >= 1e9) return `$${(numeric / 1e9).toFixed(1)}B`;
+            if (abs >= 1e6) return `$${(numeric / 1e6).toFixed(1)}M`;
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(numeric);
+        }
+
+        function parseNumericValue(rawValue) {
+            if (typeof rawValue === 'number') return rawValue;
+            if (!rawValue) return null;
+            const cleaned = String(rawValue).trim();
+            const match = cleaned.match(/-?[\d,.]+/);
+            if (!match) return null;
+            let value = Number(match[0].replace(/,/g, ''));
+            if (!Number.isFinite(value)) return null;
+            if (/trillion|T/i.test(cleaned)) value *= 1e12;
+            else if (/billion|B/i.test(cleaned)) value *= 1e9;
+            else if (/million|M/i.test(cleaned)) value *= 1e6;
+            else if (/thousand|K/i.test(cleaned)) value *= 1e3;
+            return value;
+        }
+
+        function normalizeCurrency(rawValue) {
+            const numeric = parseNumericValue(rawValue);
+            if (!Number.isFinite(numeric)) return null;
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(numeric);
+        }
+
+        function normalizePercent(rawValue) {
+            if (rawValue == null) return null;
+            const match = String(rawValue).match(/[+-]?[\d.]+/);
+            if (!match) return null;
+            const n = Number(match[0]);
+            if (!Number.isFinite(n)) return null;
+            return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+        }
+
+        function normalizeUsers(rawValue) {
+            const numeric = parseNumericValue(rawValue);
+            if (!Number.isFinite(numeric)) return null;
+            if (numeric >= 1e9) return `${(numeric / 1e9).toFixed(1)}b`;
+            if (numeric >= 1e6) return `${(numeric / 1e6).toFixed(1)}m`;
+            if (numeric >= 1e3) return `${(numeric / 1e3).toFixed(1)}k`;
+            return `${Math.round(numeric)}`;
+        }
+
+        function countTrackedPlatformsFromSource(textSource) {
+            const knownPlatforms = basketData.map(item => item.platform);
+            const matches = knownPlatforms.filter(name => textSource.toLowerCase().includes(name.toLowerCase()));
+            return Math.max(matches.length, basketData.length);
+        }
+
+        function extractLiveStatsFromJson(data) {
+            if (!data || typeof data !== 'object') return false;
+            const capValue = data.ecosystemCap || data.marketCap || data.liveMarketCap || data.cap || data.totalMarketCap;
+            const momentumValue = data.momentum24h || data.change24h || data.percentChange24h || data.momentum;
+            const activeUsersValue = data.activeUsers || data.users || data.monthlyActiveUsers || data.liveUsers;
+            const trackedValue = data.trackedPlatforms || data.platformCount || data.companiesTracked || data.totalPlatforms;
+            const dailyChangeValue = data.dailyChange || data.changeToday || data.capChangeToday;
+            const updatedValue = data.lastUpdated || data.updatedAt || data.timestamp;
+
+            if (capValue != null) {
+                const normalizedRaw = normalizeCurrency(capValue);
+                const numeric = parseNumericValue(capValue);
+                if (normalizedRaw) liveStats.ecosystemCapRaw = normalizedRaw;
+                if (Number.isFinite(numeric)) liveStats.ecosystemCapCompact = formatCompactCurrency(numeric);
+            }
+            if (momentumValue != null) {
+                const pct = normalizePercent(momentumValue);
+                if (pct) liveStats.momentum = pct;
+            }
+            if (activeUsersValue != null) {
+                const users = normalizeUsers(activeUsersValue);
+                if (users) liveStats.activeUsers = users;
+            }
+            if (trackedValue != null) {
+                const tracked = parseInt(String(trackedValue).replace(/[^\d]/g, ''), 10);
+                if (Number.isFinite(tracked)) liveStats.trackedPlatforms = Math.max(tracked, basketData.length);
+            }
+            if (dailyChangeValue != null) liveStats.dailyChange = String(dailyChangeValue);
+            liveStats.momentumLabel = 'Live SSA data stream';
+            liveStats.activeUsersDelta = 'Live ecosystem activity';
+            liveStats.lastUpdated = updatedValue ? new Date(updatedValue).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            liveStats.sourceStatus = `Live sync active • ${liveStats.lastUpdated}`;
+            liveStats.liveMode = 'json';
+            return true;
+        }
+
+        function extractLiveStatsFromHtml(html) {
+            const textSource = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+            const currencyMatches = textSource.match(/\$[\d,]+(?:\.\d+)?(?:\s?(?:trillion|billion|million|T|B|M))?/gi) || [];
+            const percentMatches = textSource.match(/[+-]?\d+(?:\.\d+)?%/g) || [];
+            const userMatches = textSource.match(/\d+(?:\.\d+)?\s?(?:m|million|k|thousand|b|billion)/gi) || [];
+            if (currencyMatches.length) {
+                currencyMatches.sort((a, b) => (parseNumericValue(b) || 0) - (parseNumericValue(a) || 0));
+                const top = currencyMatches[0];
+                liveStats.ecosystemCapRaw = normalizeCurrency(top) || liveStats.ecosystemCapRaw;
+                const numeric = parseNumericValue(top);
+                if (Number.isFinite(numeric)) liveStats.ecosystemCapCompact = formatCompactCurrency(numeric);
+            }
+            if (percentMatches.length) liveStats.momentum = normalizePercent(percentMatches[0]) || liveStats.momentum;
+            if (userMatches.length) liveStats.activeUsers = normalizeUsers(userMatches[0]) || liveStats.activeUsers;
+            liveStats.dailyChange = liveStats.momentum.includes('-') ? 'Down on the day' : 'Live momentum tracking';
+            liveStats.momentumLabel = 'Derived from SSA marketplace';
+            liveStats.activeUsersDelta = 'Marketplace activity signal';
+            liveStats.trackedPlatforms = countTrackedPlatformsFromSource(textSource);
+            liveStats.lastUpdated = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            liveStats.sourceStatus = `Live sync active • ${liveStats.lastUpdated}`;
+            liveStats.liveMode = 'html';
+            return !!currencyMatches.length;
+        }
+
+        function applyLiveStatsToUI() {
+            const mappings = {
+                'ecosystem-cap': liveStats.ecosystemCapRaw,
+                'momentum': liveStats.momentum,
+                'marketplace-cap': liveStats.ecosystemCapRaw,
+                'marketplace-change': liveStats.sourceStatus,
+                'tracked-platforms': String(liveStats.trackedPlatforms),
+                'ssa-index-cap': liveStats.ecosystemCapCompact,
+                'ssa-index-daily-change': liveStats.dailyChange,
+                'ssa-index-momentum': liveStats.momentum,
+                'ssa-index-momentum-label': liveStats.momentumLabel,
+                'ssa-index-users': liveStats.activeUsers,
+                'ssa-index-users-delta': liveStats.activeUsersDelta
+            };
+            Object.entries(mappings).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            });
+        }
+
+        async function fetchMarketDataApp() {
+            // marketdata.app for live stock prices
+            const symbols = Object.keys(SSA_TICKERS).join(',');
+            const url = `https://api.marketdata.app/v1/stocks/quotes/${symbols}/`;
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) throw new Error(`marketdata.app HTTP ${res.status}`);
+            const data = await res.json();
+            if (!data || data.s !== 'ok') throw new Error('marketdata.app bad response');
+            return data.symbol.map((sym, i) => ({
+                symbol: sym,
+                price: data.last?.[i],
+                changePct: data.changepct?.[i] != null ? data.changepct[i] * 100 : null
+            }));
+        }
+
+        async function fetchSSAJson() {
+            if (!SSA_JSON_URL || SSA_JSON_URL === "SSA_JSON_URL_PLACEHOLDER") return null;
+            const res = await fetch(SSA_JSON_URL + "?v=" + Date.now(), { cache: 'no-store' });
+            if (!res.ok) throw new Error("SSA JSON HTTP " + res.status);
+            return await res.json();
+        }
+
+        function applySSAJson(data) {
+            if (!data) return false;
+            const fmt = (n) => new Intl.NumberFormat('en-US').format(n);
+            const sign = data.momentum24h >= 0 ? '+' : '';
+            if (data.ecosystemCap) {
+                liveStats.ecosystemCapRaw = data.ecosystemCapFormatted || ('$' + fmt(data.ecosystemCap));
+                liveStats.ecosystemCapCompact = data.ecosystemCapCompact || formatCompactCurrency(data.ecosystemCap);
+            }
+            if (data.momentum24h != null) liveStats.momentum = sign + parseFloat(data.momentum24h).toFixed(2) + '%';
+            if (data.activeUsers != null) liveStats.activeUsers = fmt(data.activeUsers);
+            if (data.trackedPlatforms != null) liveStats.trackedPlatforms = data.trackedPlatforms;
+            if (data.momentumLabel) liveStats.momentumLabel = data.momentumLabel;
+            if (data.dailyChange != null) liveStats.dailyChange = (data.dailyChange >= 0 ? '↑ +$' : '↓ -$') + fmt(Math.abs(data.dailyChange)) + ' today';
+            liveStats.lastUpdated = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            liveStats.sourceStatus = 'Live sync active • ' + liveStats.lastUpdated;
+            liveStats.liveMode = 'json';
+            return true;
+        }
+
+        async function fetchLiveEndpoint(url) {
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            let raw = await response.text();
+            try {
+                const wrapper = JSON.parse(raw);
+                if (wrapper && typeof wrapper.contents === 'string') raw = wrapper.contents;
+                else if (wrapper && typeof wrapper === 'object') {
+                    if (extractLiveStatsFromJson(wrapper)) return true;
+                }
+            } catch (e) {}
+            try {
+                const json = JSON.parse(raw);
+                if (extractLiveStatsFromJson(json)) return true;
+            } catch (e) {}
+            if (!extractLiveStatsFromHtml(raw)) throw new Error('HTML missing live fields');
+            return true;
+        }
+
+        const SHARES_OUTSTANDING = {
+            'AMZN': 10.5e9, 'AAPL': 15.2e9, 'BBY': 0.19e9, 'MSFT': 7.43e9,
+            'COIN': 0.26e9, 'COST': 0.44e9, 'EBAY': 0.53e9, 'ETSY': 0.12e9,
+            'META': 2.52e9, 'GOOG': 12.3e9, 'PINS': 0.69e9, 'HOOD': 0.87e9,
+            'SBUX': 1.13e9, 'TGT': 0.46e9, 'TSLA': 3.21e9, 'UBER': 2.10e9,
+            'WMT': 8.02e9, 'W': 0.26e9, 'NFLX': 0.43e9, 'SPOT': 0.20e9
+        };
+
+        function buildStatsFromQuotes(quotes) {
+            if (!quotes || !quotes.length) return false;
+            let totalCap = 0;
+            let weightedChangePct = 0;
+            let totalWeight = 0;
+            let validTickers = 0;
+            quotes.forEach(q => {
+                const sym = q.symbol;
+                const meta = SSA_TICKERS[sym];
+                const price = q.price;
+                const changePct = q.changePct;
+                const shares = SHARES_OUTSTANDING[sym];
+                if (price && Number.isFinite(price) && shares) {
+                    totalCap += price * shares;
+                    validTickers++;
+                }
+                if (meta && changePct != null && Number.isFinite(changePct)) {
+                    weightedChangePct += changePct * meta.weight;
+                    totalWeight += meta.weight;
+                }
+            });
+            if (validTickers === 0) return false;
+            const avgChangePct = totalWeight > 0 ? weightedChangePct / totalWeight : 0;
+            const sign = avgChangePct >= 0 ? '+' : '';
+            liveStats.ecosystemCapRaw = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalCap);
+            liveStats.ecosystemCapCompact = formatCompactCurrency(totalCap);
+            liveStats.momentum = `${sign}${avgChangePct.toFixed(2)}%`;
+            liveStats.momentumLabel = 'Live weighted avg across SSA ecosystem';
+            liveStats.activeUsers = `${validTickers} of ${Object.keys(SSA_TICKERS).length} live`;
+            liveStats.activeUsersDelta = `Real-time from marketdata.app`;
+            liveStats.dailyChange = avgChangePct >= 0 ? `↑ Ecosystem up ${sign}${avgChangePct.toFixed(2)}% today` : `↓ Ecosystem down ${avgChangePct.toFixed(2)}% today`;
+            liveStats.trackedPlatforms = basketData.length;
+            liveStats.lastUpdated = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            liveStats.sourceStatus = `Live sync active • ${liveStats.lastUpdated}`;
+            liveStats.liveMode = 'marketdata';
+            return true;
+        }
+
+        function startLiveSyncLoop() {
+            refreshLiveAppState();
+            setInterval(refreshLiveAppState, 30000);
+        }
+
+        function renderProgress() {
+            const container = document.getElementById('progress-bar');
+            container.innerHTML = '';
+            
+            const steps = [
+                { num: 1, label: 'Index' }, { num: 2, label: 'Preview' },
+                { num: 3, label: 'Amount' }, { num: 4, label: 'Allocation' },
+                { num: 5, label: 'Review' }, { num: 6, label: 'Done' }
+            ];
+            
+            steps.forEach((step, idx) => {
+                const isActive = currentStep >= step.num;
+                const isCurrent = currentStep === step.num;
+                
+                const dot = document.createElement('div');
+                dot.className = `flex flex-col items-center cursor-pointer`;
+                dot.onclick = () => {
+                    if (step.num <= currentStep) {
+                        currentStep = step.num;
+                        renderCurrentStep();
+                    }
+                };
+                
+                dot.innerHTML = `
+                    <div class="flex items-center gap-x-1.5">
+                        <div class="step-dot w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold border-2 transition-all
+                            ${isActive ? 'bg-yellow-400 text-zinc-950 border-yellow-400' : 'bg-zinc-900 border-zinc-700 text-zinc-400'}">
+                            ${step.num}
+                        </div>
+                        ${idx < steps.length - 1 ? `<div class="w-8 h-0.5 ${isActive ? 'bg-yellow-400' : 'bg-zinc-800'}"></div>` : ''}
+                    </div>
+                    <div class="text-[9px] mt-1 font-medium ${isCurrent ? 'text-yellow-400' : 'text-zinc-500'}">${step.label}</div>
+                `;
+                container.appendChild(dot);
+            });
+        }
+
+        function renderCurrentStep() {
+            const container = document.getElementById('flow-container');
+            container.innerHTML = '';
+            renderProgress();
+            
+            let html = '';
+            switch(currentStep) {
+                case 1: html = renderStep1(); break;
+                case 2: html = renderStep2(); break;
+                case 3: html = renderStep3(); break;
+                case 4: html = renderStep4(); break;
+                case 5: html = renderStep5(); break;
+                case 6: html = renderStep6(); break;
+            }
+            container.innerHTML = html;
+            applyLiveStatsToUI();
+            setTimeout(() => attachStepListeners(), 50);
+        }
+
+        function renderStep1() {
+            return `
+                <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 premium-shadow">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <div class="uppercase tracking-[2px] text-xs font-semibold text-yellow-400">STEP 1 • ENTRY POINT</div>
+                            <h2 class="font-display text-3xl font-semibold tracking-tight mt-1">Live SSA Index</h2>
+                        </div>
+                        <div class="px-4 py-1.5 bg-emerald-950 text-emerald-400 text-xs font-bold rounded-3xl flex items-center gap-x-2">
+                            <i class="fa-solid fa-globe fa-sm"></i><span>LIVE FEED</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-5">
+                            <div class="text-xs text-zinc-500">ECOSYSTEM CAP</div>
+                            <div id="ssa-index-cap" class="font-display text-4xl font-semibold tabular-nums mt-1">${liveStats.ecosystemCapCompact}</div>
+                            <div class="text-emerald-400 text-sm flex items-center gap-x-1 mt-1">
+                                <i class="fa-solid fa-arrow-up"></i> <span id="ssa-index-daily-change">${liveStats.dailyChange}</span>
+                            </div>
+                        </div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-5">
+                            <div class="text-xs text-zinc-500">24H MOMENTUM</div>
+                            <div id="ssa-index-momentum" class="font-display text-4xl font-semibold tabular-nums mt-1 text-emerald-400">${liveStats.momentum}</div>
+                            <div id="ssa-index-momentum-label" class="text-xs text-zinc-500 mt-1">${liveStats.momentumLabel}</div>
+                        </div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between">
+                            <div><div class="text-xs text-zinc-500">ACTIVE USERS</div><div id="ssa-index-users" class="font-display text-4xl font-semibold tabular-nums mt-1">${liveStats.activeUsers}</div></div>
+                            <div id="ssa-index-users-delta" class="text-xs text-emerald-400">${liveStats.activeUsersDelta}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button onclick="goToStep(2)" class="px-10 py-4 bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 transition-all text-zinc-950 font-black text-xl rounded-3xl w-full max-w-xs mx-auto flex items-center justify-center gap-x-3 shadow-[0_0_25px_rgb(250,204,21,0.3)]">
+                            LAUNCH SSA INDEX <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <div class="text-xs text-zinc-500 mt-3">Instant access • No fees to preview</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStep2() {
+            return `
+                <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 premium-shadow">
+                    <div class="uppercase tracking-[2px] text-xs font-semibold text-yellow-400 mb-1">STEP 2 • BASKET OVERVIEW</div>
+                    <h2 class="font-display text-3xl font-semibold tracking-tight">SSA Smart Basket</h2>
+                    
+                    <div class="mt-6 mb-8">
+                        <div class="flex items-baseline gap-x-3">
+                            <div class="text-6xl font-semibold tabular-nums">+2.4%</div>
+                            <div class="text-emerald-400 text-xl">24h</div>
+                        </div>
+                        <div class="text-sm text-zinc-400">Weighted by live Demand + Social signals</div>
+                    </div>
+                    
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 mb-6">
+                        <div class="flex justify-between items-start">
+                            <div><div class="font-semibold">Top ${liveStats.trackedPlatforms} Consumer Platforms</div><div class="text-xs text-zinc-500 mt-0.5">${basketData.slice(0, 8).map(item => item.platform).join(" • ")}</div></div>
+                            <div class="text-right"><div class="text-xs text-zinc-400">RISK LEVEL</div><div class="text-emerald-400 font-bold">MEDIUM</div></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-x-3">
+                        <button onclick="goToStep(3)" class="flex-1 py-4 bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 transition-all text-zinc-950 font-black text-lg rounded-3xl flex items-center justify-center gap-x-2">
+                            BUY SSA SMART BASKET
+                        </button>
+                        <button onclick="showHowItWorks()" class="px-6 py-4 border border-zinc-700 hover:bg-zinc-900 transition-all text-sm font-semibold rounded-3xl flex items-center gap-x-2">
+                            <i class="fa-solid fa-info-circle"></i> <span>How it works</span>
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <div class="inline-flex items-center text-xs text-zinc-500 bg-zinc-950 px-3 py-1 rounded-3xl border border-zinc-800">
+                            <i class="fa-solid fa-sync fa-sm mr-1.5"></i> Weights refreshed daily from SSA AI
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStep3() {
+            const shares = (currentAmount / UNIT_PRICE).toFixed(2);
+            const annualFee = (currentAmount * 0.0065).toFixed(2);
+            
+            return `
+                <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 premium-shadow">
+                    <div class="uppercase tracking-[2px] text-xs font-semibold text-yellow-400 mb-1">STEP 3 • INVESTMENT AMOUNT</div>
+                    <h2 class="font-display text-3xl font-semibold tracking-tight mb-6">Choose Investment Amount</h2>
+                    
+                    <div class="grid grid-cols-5 gap-2 mb-6" id="amount-chips">
+                        <div onclick="setAmount(50)" class="amount-chip cursor-pointer text-center py-3 rounded-2xl text-sm font-semibold border ${currentAmount === 50 ? 'active border-yellow-400' : 'border-zinc-700 bg-zinc-950'}">$50</div>
+                        <div onclick="setAmount(100)" class="amount-chip cursor-pointer text-center py-3 rounded-2xl text-sm font-semibold border ${currentAmount === 100 ? 'active border-yellow-400' : 'border-zinc-700 bg-zinc-950'}">$100</div>
+                        <div onclick="setAmount(500)" class="amount-chip cursor-pointer text-center py-3 rounded-2xl text-sm font-semibold border ${currentAmount === 500 ? 'active border-yellow-400' : 'border-zinc-700 bg-zinc-950'}">$500</div>
+                        <div onclick="setAmount(1000)" class="amount-chip cursor-pointer text-center py-3 rounded-2xl text-sm font-semibold border ${currentAmount === 1000 ? 'active border-yellow-400' : 'border-zinc-700 bg-zinc-950'}">$1,000</div>
+                        <div onclick="document.getElementById('custom-amount').focus()" class="amount-chip cursor-pointer text-center py-3 rounded-2xl text-sm font-semibold border border-zinc-700 bg-zinc-950">Custom</div>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <div class="relative">
+                            <div class="absolute left-5 top-4 text-2xl font-light text-zinc-400">$</div>
+                            <input id="custom-amount" type="number" value="${currentAmount}" class="w-full bg-zinc-950 border border-zinc-700 focus:border-yellow-400 transition-colors text-4xl font-semibold pl-12 py-4 rounded-3xl outline-none" oninput="updateAmountFromInput(this.value)">
+                        </div>
+                        <div class="text-xs text-zinc-500 mt-1.5 px-1">Minimum $10 • Maximum $25,000</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-5">
+                            <div class="text-xs text-zinc-500 flex items-center gap-x-2"><i class="fa-solid fa-layer-group"></i> <span>ESTIMATED SHARES</span></div>
+                            <div id="estimated-shares" class="font-display text-4xl font-semibold tabular-nums mt-2">${shares}</div>
+                            <div class="text-xs text-emerald-400 mt-1">Fractional ownership</div>
+                        </div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-5">
+                            <div class="text-xs text-zinc-500 flex items-center gap-x-2"><i class="fa-solid fa-calendar"></i> <span>ANNUAL FEE</span></div>
+                            <div id="annual-fee" class="font-display text-4xl font-semibold tabular-nums mt-2">$${annualFee}</div>
+                            <div class="text-xs text-zinc-500 mt-1">0.65% platform fee • billed yearly</div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="goToStep(4)" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 text-zinc-950 font-black text-xl rounded-3xl flex items-center justify-center gap-x-2 transition-all">
+                        CONTINUE WITH ${formatCurrency(currentAmount)} <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderStep4() {
+            const total = currentAmount;
+            let rowsHTML = '';
+            
+            basketData.forEach(item => {
+                const amount = (item.weight / 100 * total).toFixed(2);
+                rowsHTML += `
+                    <tr class="platform-row border-b border-zinc-800 last:border-none">
+                        <td class="py-4 px-5 font-semibold">${item.platform}</td>
+                        <td class="py-4 px-5">
+                            <div class="flex items-center gap-x-3">
+                                <span class="font-mono text-sm w-9">${item.weight}%</span>
+                                <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                    <div class="allocation-bar" style="width: ${item.weight}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-5 font-semibold tabular-nums text-right">${formatCurrency(amount)}</td>
+                        <td class="py-4 px-5">
+                            <div class="flex items-center gap-x-2">
+                                <div class="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden"><div class="mini-bar" style="width: ${item.demand}%"></div></div>
+                                <span class="font-mono text-xs w-6 text-right">${item.demand}</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-5">
+                            <div class="flex items-center gap-x-2">
+                                <div class="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden"><div class="mini-bar" style="width: ${item.social}%"></div></div>
+                                <span class="font-mono text-xs w-6 text-right">${item.social}</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            return `
+                <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 premium-shadow">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <div class="uppercase tracking-[2px] text-xs font-semibold text-yellow-400">STEP 4 • LIVE ALLOCATION</div>
+                            <h2 class="font-display text-3xl font-semibold tracking-tight">Your Basket Allocation</h2>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-zinc-500">TOTAL</div>
+                            <div class="font-display text-3xl font-semibold tabular-nums">${formatCurrency(total)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto -mx-2">
+                        <table class="w-full min-w-[560px]">
+                            <thead>
+                                <tr class="text-xs text-zinc-500 border-b border-zinc-800">
+                                    <th class="text-left py-3 px-5 font-normal">PLATFORM</th>
+                                    <th class="text-left py-3 px-5 font-normal w-32">WEIGHT</th>
+                                    <th class="text-right py-3 px-5 font-normal">AMOUNT</th>
+                                    <th class="text-center py-3 px-5 font-normal w-20">DEMAND</th>
+                                    <th class="text-center py-3 px-5 font-normal w-20">SOCIAL</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">${rowsHTML}</tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-6 flex items-center justify-between text-xs">
+                        <div class="text-zinc-500">Weights update daily from SSA AI signals</div>
+                        <button onclick="refreshWeights()" class="flex items-center gap-x-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
+                            <i class="fa-solid fa-sync fa-sm"></i> <span class="font-semibold">REFRESH WEIGHTS</span>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-8">
+                        <button onclick="goToStep(5)" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 text-zinc-950 font-black text-xl rounded-3xl flex items-center justify-center gap-x-2 transition-all">
+                            CONTINUE TO BUY <i class="fa-solid fa-lock"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-4 text-xs text-zinc-500">Risk warning: This is not financial advice. Past performance does not guarantee future results.</div>
+                </div>
+            `;
+        }
+
+        function renderStep5() {
+            const shares = (currentAmount / UNIT_PRICE).toFixed(2);
+            const annualFee = (currentAmount * 0.0065).toFixed(2);
+            
+            return `
+                <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 premium-shadow">
+                    <div class="uppercase tracking-[2px] text-xs font-semibold text-yellow-400 mb-1">STEP 5 • CONFIRMATION</div>
+                    <h2 class="font-display text-3xl font-semibold tracking-tight mb-8">Review &amp; Confirm</h2>
+                    
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 mb-8">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center"><span class="text-zinc-400">Investment Amount</span><span class="font-semibold text-2xl tabular-nums">${formatCurrency(currentAmount)}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-zinc-400">Estimated Shares</span><span class="font-semibold tabular-nums">${shares}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-zinc-400">Annual Management Fee</span><span class="font-semibold tabular-nums">$${annualFee}</span></div>
+                            <div class="pt-4 border-t border-zinc-800 flex justify-between items-center text-sm">
+                                <span class="text-zinc-400">Payment Method</span>
+                                <span class="font-medium flex items-center gap-x-1.5"><i class="fa-brands fa-paypal text-[#003087]"></i> <span>PayPal</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-x-3 bg-yellow-950/30 border border-yellow-900 rounded-2xl p-4 mb-8 text-sm">
+                        <i class="fa-solid fa-shield-halved text-yellow-400 mt-0.5"></i>
+                        <div class="text-xs leading-relaxed">Your purchase will be executed securely through PayPal. Funds are protected and you can cancel within 24 hours.</div>
+                    </div>
+                    
+                    <button onclick="showPayPalModal()" class="w-full py-5 bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 text-zinc-950 font-black text-2xl rounded-3xl flex items-center justify-center gap-x-3 transition-all shadow-[0_0_30px_rgb(250,204,21,0.35)]">
+                        <i class="fa-brands fa-paypal text-3xl"></i> <span>BUY NOW WITH PAYPAL</span>
+                    </button>
+                    
+                    <div class="text-center mt-4 text-xs text-zinc-500">Secure • Instant • 256-bit encryption</div>
+                </div>
+            `;
+        }
+
+        function renderStep6() {
+            const shares = (currentAmount / UNIT_PRICE).toFixed(2);
+            
+            return `
+                <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 text-center premium-shadow relative overflow-hidden">
+                    <div class="mx-auto w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
+                        <i class="fa-solid fa-check-circle text-emerald-400 text-6xl"></i>
+                    </div>
+                    
+                    <div class="font-display text-4xl font-semibold tracking-tight mb-2">Purchase Confirmed</div>
+                    <div class="text-xl text-emerald-400 mb-8">You now own the SSA Smart Basket</div>
+                    
+                    <div class="max-w-xs mx-auto bg-zinc-950 border border-zinc-800 rounded-2xl p-5 mb-8 text-left">
+                        <div class="text-xs text-zinc-500 mb-3">PURCHASE SUMMARY</div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between"><span>Amount</span><span class="font-semibold">${formatCurrency(currentAmount)}</span></div>
+                            <div class="flex justify-between"><span>Shares Received</span><span class="font-semibold">${shares}</span></div>
+                            <div class="flex justify-between"><span>Payment</span><span class="font-semibold flex items-center gap-x-1"><i class="fa-brands fa-paypal text-[#003087]"></i> PayPal</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-y-3 max-w-xs mx-auto">
+                        <button onclick="viewInPortfolio()" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 text-zinc-950 font-black text-xl rounded-3xl transition-all">
+                            VIEW IN PORTFOLIO
+                        </button>
+                        
+                        <div onclick="toggleAutoRebalance(this)" class="cursor-pointer flex items-center justify-center gap-x-3 text-sm border border-zinc-700 hover:bg-zinc-800 transition-colors py-3.5 rounded-3xl">
+                            <div class="w-9 h-5 bg-emerald-400 rounded-full relative">
+                                <div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow"></div>
+                            </div>
+                            <span class="font-semibold">Auto-rebalancing enabled</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 text-xs text-zinc-500">Transaction ID: <span class="font-mono">SSA-78429103</span></div>
+                </div>
+            `;
+        }
+
+        function attachStepListeners() {
+            const amountInput = document.getElementById('custom-amount');
+            if (amountInput) {
+                amountInput.addEventListener('input', () => updateAmountFromInput(amountInput.value));
+                amountInput.addEventListener('focus', () => amountInput.select());
+            }
+            updateAmountChips();
+        }
+
+        function updateAmountChips() {
+            const chips = document.querySelectorAll('#amount-chips .amount-chip');
+            chips.forEach(chip => {
+                const val = parseInt(chip.textContent.replace('$','').trim());
+                if (val === currentAmount) {
+                    chip.classList.add('active', 'border-yellow-400');
+                    chip.classList.remove('border-zinc-700');
+                } else {
+                    chip.classList.remove('active', 'border-yellow-400');
+                    chip.classList.add('border-zinc-700');
+                }
+            });
+        }
+
+        function setAmount(amount) {
+            currentAmount = amount;
+            const input = document.getElementById('custom-amount');
+            if (input) input.value = amount;
+            updateAmountChips();
+            updateLiveMetrics();
+        }
+
+        function updateAmountFromInput(val) {
+            const num = parseFloat(val);
+            if (!isNaN(num) && num > 0) {
+                currentAmount = Math.min(Math.max(num, 10), 25000);
+                updateAmountChips();
+                updateLiveMetrics();
+            }
+        }
+
+        function updateLiveMetrics() {
+            const sharesEl = document.getElementById('estimated-shares');
+            const feeEl = document.getElementById('annual-fee');
+            if (!sharesEl || !feeEl) return;
+            
+            const shares = (currentAmount / UNIT_PRICE).toFixed(2);
+            const fee = (currentAmount * 0.0065).toFixed(2);
+            sharesEl.textContent = shares;
+            feeEl.textContent = '$' + fee;
+            
+            const btn = document.querySelector('button[onclick*="goToStep(4)"]');
+            if (btn) btn.innerHTML = `CONTINUE WITH ${formatCurrency(currentAmount)} <i class="fa-solid fa-arrow-right ml-2"></i>`;
+        }
+
+        function goToStep(step) {
+            currentStep = step;
+            renderCurrentStep();
+            window.scrollTo({ top: 120, behavior: 'smooth' });
+        }
+
+        function refreshWeights() {
+            basketData.forEach(item => {
+                const change = (Math.random() - 0.5) * 4;
+                item.weight = Math.max(5, Math.min(45, Math.round(item.weight + change)));
+            });
+            const totalW = basketData.reduce((s, i) => s + i.weight, 0);
+            basketData.forEach(i => i.weight = Math.round((i.weight / totalW) * 100));
+            
+            if (currentStep === 4) renderCurrentStep();
+            showToast("Weights updated from latest SSA AI signals");
+        }
+
+        function showHowItWorks() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-[110]';
+            modal.innerHTML = `
+                <div onclick="event.target.remove()" class="absolute inset-0"></div>
+                <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-md w-full mx-4 p-8 relative">
+                    <button onclick="this.closest('.fixed').remove()" class="absolute top-5 right-5 text-zinc-400 hover:text-white">×</button>
+                    <h3 class="font-display text-2xl font-semibold mb-5">How SSA Smart Basket Works</h3>
+                    <div class="space-y-6 text-sm">
+                        <div class="flex gap-x-4"><div class="w-8 h-8 rounded-2xl bg-yellow-400/10 flex-shrink-0 flex items-center justify-center text-yellow-400 font-bold">1</div><div><div class="font-semibold">AI Signal Collection</div><div class="text-xs text-zinc-400 mt-0.5">Real-time demand + social sentiment from 2.4m+ users</div></div></div>
+                        <div class="flex gap-x-4"><div class="w-8 h-8 rounded-2xl bg-yellow-400/10 flex-shrink-0 flex items-center justify-center text-yellow-400 font-bold">2</div><div><div class="font-semibold">Dynamic Weighting</div><div class="text-xs text-zinc-400 mt-0.5">Top platforms weighted by momentum score every 24 hours</div></div></div>
+                        <div class="flex gap-x-4"><div class="w-8 h-8 rounded-2xl bg-yellow-400/10 flex-shrink-0 flex items-center justify-center text-yellow-400 font-bold">3</div><div><div class="font-semibold">One-Click Execution</div><div class="text-xs text-zinc-400 mt-0.5">PayPal processes instantly • Fractional shares supported</div></div></div>
+                    </div>
+                    <div class="mt-8 text-xs text-center text-emerald-400 font-medium">Your money stays in your SSA Wallet. Instant liquidity.</div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function showPayPalModal() {
+            const modal = document.getElementById('paypal-modal');
+            document.getElementById('modal-amount').textContent = formatCurrency(currentAmount);
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+            document.getElementById('paypal-content').classList.remove('hidden');
+            document.getElementById('paypal-processing').classList.add('hidden');
+        }
+
+        function closePayPalModal() {
+            const modal = document.getElementById('paypal-modal');
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+
+        function processPayPalPayment() {
+            const content = document.getElementById('paypal-content');
+            const processing = document.getElementById('paypal-processing');
+            
+            content.classList.add('hidden');
+            processing.classList.remove('hidden');
+            
+            const paypalLink = "https://www.paypal.com/ncp/payment/XRPNJV2SG9U8Q";
+            
+            setTimeout(() => {
+                window.open(paypalLink, '_blank');
+                closePayPalModal();
+                
+                // Show intermediate "Payment Started" screen instead of jumping straight to Step 6
+                showPaymentStartedScreen();
+            }, 800);
+        }
+
+        function showPaymentStartedScreen() {
+            const container = document.getElementById('flow-container');
+            
+            container.innerHTML = `
+                <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 text-center premium-shadow">
+                    <div class="mx-auto w-16 h-16 bg-yellow-400/10 rounded-full flex items-center justify-center mb-6">
+                        <i class="fa-brands fa-paypal text-yellow-400 text-4xl"></i>
+                    </div>
+                    
+                    <div class="font-display text-3xl font-semibold tracking-tight mb-2">Payment Started</div>
+                    <div class="text-lg text-zinc-300 mb-6">Complete your payment in the PayPal tab that just opened.</div>
+                    
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 mb-8 text-left text-sm">
+                        <div class="flex items-start gap-x-3">
+                            <i class="fa-solid fa-info-circle text-yellow-400 mt-1"></i>
+                            <div>
+                                <div class="font-medium">After you finish paying on PayPal:</div>
+                                <div class="text-xs text-zinc-400 mt-1">Come back to this tab and click the button below to confirm.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="confirmPaymentComplete()" 
+                            class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black text-xl rounded-3xl transition-all">
+                        I'VE COMPLETED PAYMENT ON PAYPAL
+                    </button>
+                    
+                    <div class="mt-4 text-xs text-zinc-500">This will mark your purchase as complete and add it to your portfolio.</div>
+                </div>
+            `;
+        }
+
+        function confirmPaymentComplete() {
+            completePurchase();
+        }
+
+        function completePurchase() {
+            const shares = (currentAmount / UNIT_PRICE).toFixed(2);
+            
+            portfolio.cash -= currentAmount;
+            syncWalletAfterMutation();
+            
+            syncWalletAfterMutation();
+            portfolio.holdings.push({
+                id: Date.now(),
+                name: "SSA Smart Basket",
+                value: currentAmount,
+                shares: shares,
+                allocations: JSON.parse(JSON.stringify(basketData)),
+                purchaseDate: new Date()
+            });
+            
+            basketCurrentValue = currentAmount;
+            
+            if (!liveInterval) startLivePriceUpdates();
+            
+            currentStep = 6;
+            renderCurrentStep();
+            launchConfetti();
+            
+            setTimeout(() => {
+                showToast("Payment confirmed • Added to your portfolio");
+            }, 600);
+        }
+
+        function launchConfetti() {
+            const colors = ['#facc15', '#eab308', '#22c55e', '#3b82f6'];
+            const container = document.getElementById('flow-container');
+            
+            for (let i = 0; i < 42; i++) {
+                const confetto = document.createElement('div');
+                confetto.className = 'confetti';
+                confetto.style.left = Math.random() * 100 + '%';
+                confetto.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetto.style.animationDelay = (Math.random() * 0.6) + 's';
+                confetto.style.width = (6 + Math.random() * 8) + 'px';
+                confetto.style.height = confetto.style.width;
+                container.appendChild(confetto);
+                setTimeout(() => confetto.remove(), 1600);
+            }
+        }
+
+        function viewInPortfolio() { showPortfolio(); }
+
+        function toggleAutoRebalance(element) {
+            if (element.classList.contains('active-rebalance')) {
+                element.classList.remove('active-rebalance');
+                element.innerHTML = `<div class="w-9 h-5 bg-zinc-700 rounded-full relative"><div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow"></div></div><span class="font-semibold">Enable auto-rebalancing</span>`;
+            } else {
+                element.classList.add('active-rebalance');
+                element.innerHTML = `<div class="w-9 h-5 bg-emerald-400 rounded-full relative"><div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow"></div></div><span class="font-semibold">Auto-rebalancing enabled</span>`;
+                showToast("Auto-rebalancing activated • Daily adjustments");
+            }
+        }
+
+        function showPortfolio() {
+            const container = document.getElementById('flow-container');
+            let html = '';
+            
+            if (portfolio.holdings.length === 0) {
+                html = `
+                    <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 text-center premium-shadow">
+                        <i class="fa-solid fa-wallet text-6xl text-zinc-700 mb-4"></i>
+                        <div class="font-semibold text-xl">Your portfolio is empty</div>
+                        <div class="text-sm text-zinc-500 mt-1 mb-6">Buy your first SSA Smart Basket to get started</div>
+                        <button onclick="goToStep(1)" class="px-8 py-3 bg-yellow-400 text-zinc-950 font-bold rounded-3xl text-sm">Start Shopping</button>
+                    </div>
+                `;
+            } else {
+                const totalValue = portfolio.cash + portfolio.holdings.reduce((sum, h) => sum + h.value, 0);
+                const holding = portfolio.holdings[0];
+                
+                html = `
+                    <div class="basket-card bg-zinc-900 border border-zinc-700 rounded-3xl p-8 premium-shadow">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <div class="uppercase tracking-[2px] text-xs font-semibold text-yellow-400">PORTFOLIO WALLET</div>
+                                <h2 class="font-display text-4xl font-semibold tracking-tighter">My Wallet</h2>
+                            </div>
+                            <div onclick="goToStep(1)" class="cursor-pointer px-5 py-2 bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm font-semibold rounded-3xl flex items-center gap-x-2">
+                                <i class="fa-solid fa-plus"></i> <span>Buy More</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="flex justify-between items-end mb-3">
+                                <div>
+                                    <div class="text-xs text-zinc-500">TOTAL PORTFOLIO VALUE</div>
+                                    <div class="font-display text-5xl font-semibold tabular-nums tracking-tighter" id="portfolio-total">${formatCurrency(totalValue)}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-emerald-400 flex items-center justify-end gap-x-1 text-sm font-medium">
+                                        <i class="fa-solid fa-arrow-trend-up"></i> <span>+2.8% today</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
+                                    <div class="text-xs text-zinc-400">CASH</div>
+                                    <div class="font-semibold text-2xl tabular-nums mt-1">${formatCurrency(portfolio.cash)}</div>
+                                </div>
+                                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
+                                    <div class="text-xs text-zinc-400">SSA SMART BASKET</div>
+                                    <div class="font-semibold text-2xl tabular-nums mt-1" id="basket-value">${formatCurrency(holding.value)}</div>
+                                    <div class="text-emerald-400 text-xs">+4.3% since purchase</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between mb-3 px-1">
+                                <div class="font-semibold">Holdings</div>
+                                <div onclick="refreshPortfolioPrices()" class="cursor-pointer text-xs flex items-center gap-x-1 text-yellow-400 hover:text-yellow-300">
+                                    <i class="fa-solid fa-sync fa-sm"></i> <span>REFRESH</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden">
+                                <div class="p-5 flex items-center justify-between">
+                                    <div class="flex items-center gap-x-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-2xl flex items-center justify-center">
+                                            <i class="fa-solid fa-layer-group text-zinc-950 text-3xl"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold">SSA Smart Basket</div>
+                                            <div class="text-xs text-zinc-400">${holding.shares} shares • Bought ${holding.purchaseDate.toLocaleDateString()}</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-semibold tabular-nums" id="holding-value">${formatCurrency(holding.value)}</div>
+                                        <div class="text-xs text-emerald-400">LIVE</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="border-t border-zinc-800 px-5 py-4 bg-zinc-950">
+                                    <div class="text-xs font-medium text-zinc-400 mb-3">CURRENT ALLOCATION</div>
+                                    <div class="space-y-2.5">
+                                        ${holding.allocations.map(item => {
+                                            const amt = (item.weight / 100 * holding.value).toFixed(2);
+                                            return `
+                                                <div class="flex items-center text-xs">
+                                                    <div class="w-24 font-medium">${item.platform}</div>
+                                                    <div class="flex-1 mx-3"><div class="h-1 bg-zinc-800 rounded-full overflow-hidden"><div class="h-1 rounded-full" style="width: ${item.weight}%; background: ${item.color}"></div></div></div>
+                                                    <div class="w-16 text-right font-mono">${item.weight}%</div>
+                                                    <div class="w-20 text-right tabular-nums font-medium">${formatCurrency(amt)}</div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-x-3">
+                            <button onclick="addMoreToBasket()" class="flex-1 py-3.5 text-sm font-semibold border border-zinc-700 hover:bg-zinc-800 rounded-3xl transition-colors">Add More</button>
+                            <button onclick="sellBasket()" class="flex-1 py-3.5 text-sm font-semibold border border-red-900 hover:bg-red-950 text-red-400 rounded-3xl transition-colors">Sell Basket</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+            
+            if (portfolio.holdings.length > 0 && !liveInterval) startLivePriceUpdates();
+        }
+
+        function startLivePriceUpdates() {
+            if (liveInterval) clearInterval(liveInterval);
+            liveInterval = setInterval(() => {
+                if (portfolio.holdings.length === 0) return;
+                const change = (Math.random() - 0.5) * 0.008;
+                basketCurrentValue = basketCurrentValue * (1 + change);
+                portfolio.holdings[0].value = basketCurrentValue;
+                
+                const totalEl = document.getElementById('portfolio-total');
+                const basketValEl = document.getElementById('basket-value');
+                const holdingValEl = document.getElementById('holding-value');
+                
+                if (totalEl && basketValEl && holdingValEl) {
+                    const total = portfolio.cash + basketCurrentValue;
+                    totalEl.textContent = formatCurrency(total);
+                    basketValEl.textContent = formatCurrency(basketCurrentValue);
+                    holdingValEl.textContent = formatCurrency(basketCurrentValue);
+                }
+            }, 4200);
+        }
+
+        function refreshPortfolioPrices() {
+            if (portfolio.holdings.length === 0) return;
+            const change = (Math.random() * 0.012) + 0.003;
+            basketCurrentValue = basketCurrentValue * (1 + change);
+            portfolio.holdings[0].value = basketCurrentValue;
+            showPortfolio();
+            showToast("Prices updated from live market feed");
+        }
+
+        function addMoreToBasket() {
+            currentAmount = 250;
+            currentStep = 3;
+            renderCurrentStep();
+        }
+
+        function sellBasket() {
+            if (portfolio.holdings.length === 0) return;
+            portfolio.cash += portfolio.holdings[0].value;
+            portfolio.holdings = [];
+            showToast("Basket sold successfully • Funds added to cash");
+            setTimeout(() => showPortfolio(), 600);
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-8 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-sm px-5 py-3 rounded-3xl flex items-center gap-x-2 shadow-xl z-[200]`;
+            toast.innerHTML = `<i class="fa-solid fa-check-circle text-emerald-400"></i> <span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 2400);
+        }
+
+        function updateEcosystemCap() {
+            const capEl = document.getElementById('ecosystem-cap');
+            let cap = 608334580840;
+            setInterval(() => {
+                cap += Math.floor(Math.random() * 4200000) + 1800000;
+                capEl.textContent = '$' + (cap / 1000000000).toFixed(1) + 'B';
+            }, 8500);
+        }
+
+        function setupKeyboard() {
+            document.addEventListener('keydown', e => {
+                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    const input = document.getElementById('custom-amount');
+                    if (input) input.focus();
+                }
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('paypal-modal');
+                    if (modal.style.display === 'flex') closePayPalModal();
+                }
+            });
+            
+            document.addEventListener('keypress', e => {
+                if (e.key.toLowerCase() === 'p' && document.activeElement.tagName === 'BODY') showPortfolio();
+            });
+        }
+
+        function initialize() {
+            initTailwind();
+            currentStep = 1;
+            currentAmount = 500;
+            renderCurrentStep();
+            updateEcosystemCap();
+            setupKeyboard();
+            console.log('%c[SSA] Smart Basket live demo ready with real PayPal + payment confirmation flow', 'color:#666');
+        }
+
+        window.onload = initialize;
+        window.SSA = { goToStep, showPortfolio, setAmount };
+
+        const MARKETPLACE_URL = "https://www.shopshareanywhere.com/ssa-marketplace";
+        const STORAGE_KEY = "ssaSecureWalletState";
+        let walletSession = { email: null, unlocked: false };
+
+        function storageAvailable() {
+            try {
+                const key = '__ssa_test__';
+                localStorage.setItem(key, key);
+                localStorage.removeItem(key);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function setSigninMessage(message, tone = 'neutral') {
+            const el = document.getElementById('signin-message');
+            if (!el) return;
+            el.classList.remove('hidden', 'bg-red-500/10', 'text-red-300', 'border', 'border-red-500/20', 'bg-emerald-500/10', 'text-emerald-300', 'border-emerald-500/20', 'bg-zinc-800', 'text-zinc-300', 'border-zinc-700');
+            if (tone === 'error') el.classList.add('bg-red-500/10', 'text-red-300', 'border', 'border-red-500/20');
+            else if (tone === 'success') el.classList.add('bg-emerald-500/10', 'text-emerald-300', 'border', 'border-emerald-500/20');
+            else el.classList.add('bg-zinc-800', 'text-zinc-300', 'border', 'border-zinc-700');
+            el.textContent = message;
+        }
+
+        function updateWalletSecurityUI() {
+            const status = document.getElementById('wallet-security-status');
+            const detail = document.getElementById('wallet-security-detail');
+            if (!status || !detail) return;
+            if (walletSession.unlocked) {
+                status.textContent = 'Encrypted';
+                detail.textContent = `Secured for ${walletSession.email || 'current user'} and restored after refresh.`;
+            } else {
+                status.textContent = 'Locked';
+                detail.textContent = 'Sign in to decrypt holdings on this device.';
+            }
+        }
+
+        async function deriveKey(passcode, salt) {
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey('raw', enc.encode(passcode), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        }
+
+        function toBase64(buffer) {
+            return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        }
+
+        function fromBase64(value) {
+            return Uint8Array.from(atob(value), c => c.charCodeAt(0));
+        }
+
+        async function encryptWalletState(passcode) {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveKey(passcode, salt);
+            const payload = new TextEncoder().encode(JSON.stringify(portfolio));
+            const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, payload);
+            return {
+                email: walletSession.email,
+                salt: toBase64(salt),
+                iv: toBase64(iv),
+                cipher: toBase64(encrypted),
+                updatedAt: new Date().toISOString()
+            };
+        }
+
+        async function persistWalletState(passcode) {
+            if (!storageAvailable() || !walletSession.email || !passcode) return;
+            const encryptedState = await encryptWalletState(passcode);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(encryptedState));
+        }
+
+        async function restoreWalletState(passcode) {
+            if (!storageAvailable()) throw new Error('Local storage unavailable on this device.');
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return false;
+            const saved = JSON.parse(raw);
+            const key = await deriveKey(passcode, fromBase64(saved.salt));
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(saved.iv) }, key, fromBase64(saved.cipher));
+            portfolio = JSON.parse(new TextDecoder().decode(decrypted));
+            walletSession.email = saved.email || walletSession.email;
+            walletSession.unlocked = true;
+            return true;
+        }
+
+        async function handleSignIn(event) {
+            event.preventDefault();
+            const email = document.getElementById('signin-email').value.trim();
+            const passcode = document.getElementById('signin-passcode').value;
+            if (!email || passcode.length < 6) {
+                setSigninMessage('Enter a valid email and a passcode with at least 6 characters.', 'error');
+                return;
+            }
+            walletSession.email = email;
+            try {
+                const restored = await restoreWalletState(passcode);
+                if (!restored) {
+                    walletSession.unlocked = true;
+                    await persistWalletState(passcode);
+                    setSigninMessage('New secure wallet created and encrypted on this device.', 'success');
+                } else {
+                    setSigninMessage('Secure wallet restored from encrypted local state.', 'success');
+                }
+                document.getElementById('signin-overlay').classList.add('hidden-access');
+                const userName = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\w/g, c => c.toUpperCase());
+                const userLabel = document.querySelector('nav .text-sm.font-semibold');
+                if (userLabel) userLabel.textContent = userName || 'SSA Member';
+                updateWalletSecurityUI();
+                renderCurrentStep();
+                renderPortfolio();
+                window.__ssaPasscode = passcode;
+            } catch (error) {
+                setSigninMessage('Unable to unlock this wallet with that passcode.', 'error');
+            }
+        }
+
+        async function syncWalletAfterMutation() {
+            if (walletSession.unlocked && window.__ssaPasscode) {
+                try { await persistWalletState(window.__ssaPasscode); } catch (e) {}
+            }
+        }
+
+        async function loadMarketStats() {
+            await refreshLiveAppState();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTailwind();
+            const form = document.getElementById('signin-form');
+            if (form) form.addEventListener('submit', handleSignIn);
+            updateWalletSecurityUI();
+            startLiveSyncLoop();
+        });
+
+    </script>
+</body>
+</html>
